@@ -1,0 +1,8 @@
+from celery import shared_task
+
+
+@shared_task(
+    name="common.health.ping",
+)
+def ping():
+    return "pong"

@@ -1,0 +1,194 @@
+services:
+
+  postgres:
+
+    image: postgres:16-alpine
+
+    container_name: resume_postgres
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - resume_network
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+
+    image: redis:7-alpine
+
+    container_name: resume_redis
+
+    restart: unless-stopped
+
+    networks:
+      - resume_network
+
+
+  web:
+
+    build:
+      context: ..
+      dockerfile: docker/development/Dockerfile
+
+    container_name: resume_web
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env
+
+    volumes:
+      - ..:/app
+
+      - static_volume:/app/staticfiles
+
+      - media_volume:/app/media
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+      redis:
+
+        condition: service_started
+
+    networks:
+      - resume_network
+
+
+  celery:
+
+    build:
+      context: ..
+      dockerfile: docker/development/Dockerfile
+
+    container_name: resume_celery
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env
+
+    volumes:
+      - ..:/app
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+      redis:
+
+        condition: service_started
+
+    networks:
+      - resume_network
+
+
+  celery-beat:
+
+    build:
+      context: ..
+      dockerfile: docker/development/Dockerfile
+
+    container_name: resume_celery_beat
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env
+
+    volumes:
+      - ..:/app
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+      redis:
+
+        condition: service_started
+
+    networks:
+      - resume_network
+
+
+  flower:
+
+    build:
+      context: ..
+      dockerfile: docker/development/Dockerfile
+
+    container_name: resume_flower
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env
+
+    depends_on:
+
+      redis:
+
+        condition: service_started
+
+    networks:
+      - resume_network
+
+
+  nginx:
+
+    image: nginx:alpine
+
+    container_name: resume_nginx
+
+    restart: unless-stopped
+
+    depends_on:
+      - web
+
+    volumes:
+
+      - static_volume:/static
+
+      - media_volume:/media
+
+    networks:
+      - resume_network
+
+
+networks:
+
+  resume_network:
+
+    driver: bridge
+
+
+volumes:
+
+  postgres_data:
+
+  static_volume:
+
+  media_volume:

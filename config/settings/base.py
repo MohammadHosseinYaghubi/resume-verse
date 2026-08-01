@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from decouple import config, Csv
 from datetime import timedelta
+from .logging import LOGGING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -48,12 +49,21 @@ THIRD_PARTIES = [
     "django_filters",
     "drf_spectacular",
     "corsheaders", 
+    "weasyprint",
 ]
 
 LOCAL_APPS = [
     "apps.common",
     "apps.accounts",
     "apps.resume",
+    "apps.pdf",
+    "apps.analytics",
+    "apps.image",
+    "apps.contact",
+    "apps.search",
+    "apps.notification",
+    "apps.core_logging",
+    
     
 ]
 
@@ -66,6 +76,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "apps.core_logging.middleware.RequestLoggingMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -129,11 +140,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
@@ -195,6 +203,9 @@ REST_FRAMEWORK = {
 
     "DEFAULT_VERSION": "v1",
     
+    "ALLOWED_VERSIONS": ("v1",),
+
+    
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -205,12 +216,11 @@ REST_FRAMEWORK = {
         "user": "1000/hour",
         "login": "10/min",
     },
-
 }
 
 SIMPLE_JWT = {
     
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken"),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
@@ -237,33 +247,30 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-LOGGING = {
+# LOGGING = {
 
-    "version": 1,
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "formatters": {
+#         "standard": {
+#             "format": "[{asctime}] {levelname} {name}: {message}",
+#             "style": "{",
+#         },
+#     },
 
-    "disable_existing_loggers": False,
+#     "handlers": {
+#         "console": {
+#             "class": "logging.StreamHandler",
+#             "formatter": "standard",
+#         },
+#     },
 
-    "formatters": {
+#     "root": {
+#         "handlers": ["console"],
+#         "level": "INFO",
+#     },
 
-        "standard": {
-            "format": "[{asctime}] {levelname} {name}: {message}",
-            "style": "{",
-        },
-    },
-
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "standard",
-        },
-    },
-
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
-    },
-
-}
+# }
 
 CACHES = {
     "default": {
@@ -280,7 +287,6 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS":
                 "django_redis.client.DefaultClient",
-
         },
 
         "TIMEOUT": 60 * 15,
@@ -301,21 +307,22 @@ CELERY_ACCEPT_CONTENT = [
 ]
 
 CELERY_TASK_SERIALIZER = "json"
-
 CELERY_RESULT_SERIALIZER = "json"
-
 CELERY_TIMEZONE = TIME_ZONE
-
 CELERY_TASK_TRACK_STARTED = True
-
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 
 # Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend",
+)
+
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool, default=True)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+CONTACT_ADMIN_EMAIL = config("CONTACT_ADMIN_EMAIL", default=DEFAULT_FROM_EMAIL,)

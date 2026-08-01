@@ -35,11 +35,31 @@ CSRF_TRUSTED_ORIGINS = config(
     cast=Csv(),
 )
 
-LOGGING["handlers"]["file"] = {
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": BASE_DIR / "logs/django.log",
-    "maxBytes": 1024 * 1024 * 10,
-    "backupCount": 10,
-}
+# LOGGING["handlers"]["file"] = {
+#     "class": "logging.handlers.RotatingFileHandler",
+#     "filename": BASE_DIR / "logs/django.log",
+#     "maxBytes": 1024 * 1024 * 10,
+#     "backupCount": 10,
+# }
+LOGGING["handlers"]["application"]["class"] = (
+    "logging.handlers.RotatingFileHandler"
+)
+
+LOGGING["handlers"]["application"]["maxBytes"] = (
+    10 * 1024 * 1024
+)
+
+LOGGING["handlers"]["application"]["backupCount"] = 10
+
+
+LOGGING["handlers"]["error"]["class"] = (
+    "logging.handlers.RotatingFileHandler"
+)
+
+LOGGING["handlers"]["error"]["maxBytes"] = (
+    10 * 1024 * 1024
+)
+
+LOGGING["handlers"]["error"]["backupCount"] = 10
 
 LOGGING["root"]["handlers"].append("file")
